@@ -2,6 +2,8 @@ package com.md_5.goinround;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 import java.util.logging.Logger;
@@ -13,13 +15,20 @@ import org.bukkit.entity.Player;
 public class GoinRound extends JavaPlugin {
 
     static final Logger logger = Bukkit.getServer().getLogger();
-    public static HashMap<Player, Scanner> journeys = new HashMap<Player, Scanner>();
+    public HashMap<Player, Scanner> journeys = new HashMap<Player, Scanner>();
 
     public void onEnable() {
         logger.info(String.format("GoinRound v%1$s by md_5 enabled", this.getDescription().getVersion()));
     }
 
     public void onDisable() {
+    	Iterator<Scanner> i = journeys.values().iterator();
+    	while(i.hasNext())
+    	{
+    		Scanner s = i.next();
+    		getServer().getScheduler().cancelTask(s.getTaskId());
+    		i.remove();
+    	}
         logger.info(String.format("GoinRound v%1$s by md_5 disabled", this.getDescription().getVersion()));
     }
 
@@ -33,6 +42,10 @@ public class GoinRound extends JavaPlugin {
     }
 
     public boolean onPlayerCommand(Player player, Command command, String label, String[] args) {
+    	if(!player.hasPermission("goinround.scan"))
+    	{
+    		return false;
+    	}
         if (args.length == 1) {
             try {
                 int time = Integer.parseInt(args[0]);
@@ -40,7 +53,8 @@ public class GoinRound extends JavaPlugin {
                 return true;
             } catch (NumberFormatException ex) {
                 if (args[0].equalsIgnoreCase("stop")) {
-                    journeys.get(player).interrupt();
+                    player.sendMessage(ChatColor.RED + "GoinRound: Scan stopped at " + journeys.get(player).getCurrentPlayerName());
+                    removeAndDisableScanner(journeys.get(player),player);
                     return true;
                 }
                 /*if (args[0].equalsIgnoreCase("continue")) {
@@ -55,8 +69,13 @@ public class GoinRound extends JavaPlugin {
         player.sendMessage(ChatColor.RED + "Usage: /gr <stop time>");
         return false;
     }
+    
+    private void scheduleTask(Scanner scanner)
+    {
+    	scanner.setTaskId(getServer().getScheduler().scheduleSyncRepeatingTask(this, scanner, 0L, scanner.getInterval()));
+    }
 
-    public boolean onConsoleCommand(CommandSender sender, Command command, String label, String[] args) {
+	public boolean onConsoleCommand(CommandSender sender, Command command, String label, String[] args) {
         sender.sendMessage("GoinRound v" + this.getDescription().getVersion() + " by md_5");
         sender.sendMessage("GoinRound: No other console functionality is available at this time");
         /*Player player = this.getServer().getPlayer(args[0]);
@@ -81,9 +100,9 @@ public class GoinRound extends JavaPlugin {
                     playerList.add(p);
                 }
             }
-            Scanner handle = new Scanner(player, time, playerList);
+            Scanner handle = new Scanner(player, time, playerList, this);
             journeys.put(player, handle);
-            journeys.get(player).start();
+            scheduleTask(handle);
             player.sendMessage(ChatColor.GOLD + "Your journey has started. Stopping at each player for " + time + " seconds");
             player.sendMessage(ChatColor.GOLD + "Use /gr stop to stop at the current player and end your journey");
             //TODO /gr continue functionality
@@ -91,5 +110,11 @@ public class GoinRound extends JavaPlugin {
         } else {
             player.sendMessage(ChatColor.RED + "GoinRound: You are already on a journey. Use /gr stop to end it");
         }
+    }
+    
+    public void removeAndDisableScanner(Scanner s, Player p)
+    {
+    	getServer().getScheduler().cancelTask(s.getTaskId());
+    	journeys.remove(p);
     }
 }
