@@ -9,7 +9,7 @@ public class Scanner implements Runnable {
 
     private int interval;
     private int currentPosition;
-    private ArrayList<Player> playerList;
+    private ArrayList<Player> unseenPlayerList;
     private Player player;
     private Location playerLoc;
     private Player currentPlayer;
@@ -21,7 +21,7 @@ public class Scanner implements Runnable {
         player = playerArg;
         playerLoc = player.getLocation();
         interval = (intervalArg * 20);
-        playerList = playerListArg;
+        unseenPlayerList = playerListArg;
         currentPosition = 0;
         taskId = 0;
     }
@@ -32,9 +32,9 @@ public class Scanner implements Runnable {
     	{
     		plugin.removeAndDisableScanner(this,player);
     	}
-       if(currentPosition < playerList.size())
+       if(currentPosition < unseenPlayerList.size())
        {
-    	   currentPlayer = playerList.get(currentPosition); 
+    	   currentPlayer = unseenPlayerList.get(currentPosition); 
             if (currentPlayer.isOnline()) {
             	player.teleport(currentPlayer);
                 player.sendMessage(ChatColor.GREEN + "You are now at " + currentPlayer.getName());
@@ -47,6 +47,7 @@ public class Scanner implements Runnable {
     	   player.teleport(playerLoc);
     	   player.sendMessage(ChatColor.GOLD + "Your journey has ended and you have been returned to your original location");
     	   plugin.removeAndDisableScanner(this,player);
+    	   unseenPlayerList.clear();
        }
     }
     public String getCurrentPlayerName()
@@ -66,4 +67,34 @@ public class Scanner implements Runnable {
 		return interval;
 	}
 	
+	public void addToUnseenPlayers(Player p)
+	{
+		unseenPlayerList.add(p);
+	}
+	
+	public void removeFromUnseenPlayers(Player p)
+	{
+		if(unseenPlayerList.contains(p))
+		{
+			int index = unseenPlayerList.indexOf(p);
+			if(index < currentPosition)
+			{
+				currentPosition = currentPosition +1;
+			}
+		}
+		unseenPlayerList.remove(p);
+	}
+	
+	public boolean isInPlayerList(Player p)
+	{
+		return unseenPlayerList.contains(p);
+	}
+
+	public boolean hasYetToBeSeen(Player player) {
+		if(unseenPlayerList.indexOf(player) >= currentPosition)
+		{
+			return true;
+		}
+		return false;
+	}
 }

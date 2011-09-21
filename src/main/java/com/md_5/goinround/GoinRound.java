@@ -11,14 +11,18 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 
 public class GoinRound extends JavaPlugin {
 
     static final Logger logger = Bukkit.getServer().getLogger();
     public HashMap<Player, Scanner> journeys = new HashMap<Player, Scanner>();
+    public final GoinRoundPlayerListener playerListener = new GoinRoundPlayerListener(this);
 
     public void onEnable() {
         logger.info(String.format("GoinRound v%1$s by md_5 enabled", this.getDescription().getVersion()));
+        getServer().getPluginManager().registerEvent(Event.Type.PLAYER_LOGIN, playerListener, Event.Priority.Monitor, this);
+        getServer().getPluginManager().registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Monitor, this);
     }
 
     public void onDisable() {
@@ -53,14 +57,17 @@ public class GoinRound extends JavaPlugin {
                 return true;
             } catch (NumberFormatException ex) {
                 if (args[0].equalsIgnoreCase("stop")) {
-                    player.sendMessage(ChatColor.RED + "GoinRound: Scan stopped at " + journeys.get(player).getCurrentPlayerName());
-                    removeAndDisableScanner(journeys.get(player),player);
+                   if(journeys.containsKey(player))
+                   {
+                	   player.sendMessage(ChatColor.RED + "GoinRound: Scan stopped at " + journeys.get(player).getCurrentPlayerName());
+                	   removeAndDisableScanner(journeys.get(player),player);
+                   }
+                   else
+                   {
+                	   player.sendMessage(ChatColor.RED + "GoinRound: You are not on any journey");
+                   }
                     return true;
                 }
-                /*if (args[0].equalsIgnoreCase("continue")) {
-                    return true;
-                    //journeys.get(player).run();
-                }*/
                 player.sendMessage(ChatColor.RED + "GoinRound: " + args[0] + " is not a valid number!");
                 return false;
             }
@@ -78,17 +85,6 @@ public class GoinRound extends JavaPlugin {
 	public boolean onConsoleCommand(CommandSender sender, Command command, String label, String[] args) {
         sender.sendMessage("GoinRound v" + this.getDescription().getVersion() + " by md_5");
         sender.sendMessage("GoinRound: No other console functionality is available at this time");
-        /*Player player = this.getServer().getPlayer(args[0]);
-        switch (args.length) {
-        case 0:
-        sender.sendMessage("GoinRound v" + this.getDescription().getVersion() + " by md_5");
-        sender.sendMessage("Options: <player> <time> ");
-        break;
-        case 1:
-        case 2:
-        logger.info(args[0]);
-        sender.sendMessage(player.getName().toString() + "Has been sent to patrol the server");
-        }*/
         return true;
     }
 
